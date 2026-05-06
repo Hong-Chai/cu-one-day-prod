@@ -1,0 +1,54 @@
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'homepage:home' %}">{% load static %}<img src="{% static 'images/logo.png' %}" alt="" width="32" height="32" class="rounded me-2"> Я препод?</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        {% if request.resolver_match.view_name == 'homepage:home' %}
+                            <span class="nav-link active">Главная</span>
+                        {% else %}
+                            <a class="nav-link" href="{% url 'homepage:home' %}">Главная</a>
+                        {% endif %}
+                    </li>
+                    {% if user.is_authenticated %}
+                    {% comment %} <li class="nav-item">
+                        {% if request.resolver_match.view_name == 'users:profile' %}
+                            <span class="nav-link active">Профиль</span>
+                        {% else %}
+                            <a class="nav-link" href="{% url 'users:profile' %}">Профиль</a>
+                        {% endif %}
+                    </li> {% endcomment %}
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'users:logout' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-link btn btn-link" style="border: none; background: none; cursor: pointer;">Выход</button>
+                        </form>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        {% if request.resolver_match.view_name == 'users:login' %}
+                            <span class="nav-link active">Вход</span>
+                        {% else %}
+                            <a class="nav-link" href="{% url 'users:login' %}">Вход</a>
+                        {% endif %}
+                    </li>
+                    <li class="nav-item">
+                        {% if request.resolver_match.view_name == 'users:signup' %}
+                            <span class="nav-link active">Регистрация</span>
+                        {% else %}
+                            <a class="nav-link" href="{% url 'users:signup' %}">Регистрация</a>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
