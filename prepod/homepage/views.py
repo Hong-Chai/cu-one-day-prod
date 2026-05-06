@@ -1,5 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 
 def home(request):
-    return render(request, "homepage/main.html")
+    return redirect("lecture:app")
+    # return render(request, "homepage/main.html")    # return render(request, "homepage/main.html")

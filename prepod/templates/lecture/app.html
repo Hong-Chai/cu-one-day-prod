@@ -18,15 +18,32 @@
 
     <!-- Шаг 2: Лекция -->
     <div id="lecture-section" {% if not has_expertise %}style="display:none;"{% endif %}>
-        <!-- Информация о специализации -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h5 class="card-title mb-2">Ваша специализация</h5>
-                        <p id="expertise-display" class="mb-0 text-muted">{{ expertise }}</p>
+        <!-- Верхняя панель -->
+        <div class="row mb-3">
+            <!-- Информация о специализации -->
+            <div class="col-md-8">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title mb-2">Ваша специализация</h5>
+                                <p id="expertise-display" class="mb-0 text-muted">{{ expertise }}</p>
+                            </div>
+                            <button id="change-expertise-btn" class="btn btn-sm btn-outline-secondary">Изменить</button>
+                        </div>
                     </div>
-                    <button id="change-expertise-btn" class="btn btn-sm btn-outline-secondary">Изменить</button>
+                </div>
+            </div>
+            
+            <!-- Профиль и подписка -->
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">{{ user.username }}</h5>
+                        <p class="mb-2"><strong>Подписка:</strong> <span class="badge bg-secondary">Free</span></p>
+                        <p class="mb-3"><strong>Баланс:</strong> <span id="credits-balance" class="badge bg-primary">{{ credits }}</span> кредитов</p>
+                        <button class="btn btn-sm btn-success" disabled>Купить подписку</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -42,11 +59,14 @@
                 <textarea id="lecture-input" class="form-control mb-3" rows="10" placeholder="Напишите текст лекции по данной теме...">{{ current_lecture_text }}</textarea>
                 
                 <button id="submit-lecture" class="btn btn-success">Отправить лекцию</button>
+                <div id="no-credits-message" class="alert alert-danger mt-3" style="display:none;">
+                    У вас закончились кредиты. Пожалуйста, пополните баланс.
+                </div>
                 
                 {% if current_feedback %}
                 <div id="feedback-section" class="mt-4">
                     <h4>Фидбэк от ИИ</h4>
-                    <div id="feedback-content" class="alert alert-warning">{{ current_feedback }}</div>
+                    <div id="feedback-content" class="alert alert-warning">{{ current_feedback|linebreaks }}</div>
                 </div>
                 {% else %}
                 <div id="feedback-section" class="mt-4" style="display:none;">
@@ -75,9 +95,9 @@
                                 <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#completedTopicsAccordion">
                                     <div class="accordion-body">
                                         <h6>Текст лекции:</h6>
-                                        <p class="text-muted">{{ topic.lecture_text }}</p>
+                                        <p class="text-muted">{{ topic.lecture_text|linebreaks }}</p>
                                         <h6 class="mt-3">Фидбэк:</h6>
-                                        <p class="text-success">{{ topic.feedback }}</p>
+                                        <p class="text-success">{{ topic.feedback|linebreaks }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -107,8 +127,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const feedbackContent = document.getElementById('feedback-content');
     const completedTopicsList = document.getElementById('completed-topics-list');
     const completedCount = document.getElementById('completed-count');
+    const creditsBalance = document.getElementById('credits-balance');
+    const noCreditsMessage = document.getElementById('no-credits-message');
 
     let currentTopic = '';
+    let credits = {{ credits }};
+
+    function updateCreditsDisplay() {
+        creditsBalance.textContent = credits;
+        if (credits <= 0) {
+            submitLectureBtn.disabled = true;
+            noCreditsMessage.style.display = 'block';
+        } else {
+            submitLectureBtn.disabled = false;
+            noCreditsMessage.style.display = 'none';
+        }
+    }
+
+    updateCreditsDisplay();
 
     // Изменение специализации
     if (changeExpertiseBtn) {
@@ -162,6 +198,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Отправка лекции
     submitLectureBtn.addEventListener('click', async function() {
+        if (credits <= 0) {
+            noCreditsMessage.style.display = 'block';
+            return;
+        }
+        
         const lectureText = lectureInput.value.trim();
         if (!lectureText) {
             alert('Пожалуйста, напишите текст лекции');
@@ -191,7 +232,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            feedbackContent.textContent = data.feedback;
+            if (data.credits !== undefined) {
+                credits = data.credits;
+                updateCreditsDisplay();
+            }
+            
+            feedbackContent.innerHTML = data.feedback.replace(/\n/g, '<br>');
             
             if (data.status === 'ok') {
                 feedbackContent.className = 'alert alert-success';
@@ -221,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <h6>Текст лекции:</h6>
                             <p class="text-muted">${lectureText}</p>
                             <h6 class="mt-3">Фидбэк:</h6>
-                            <p class="text-success">${data.feedback}</p>
+                            <p class="text-success">${data.feedback.replace(/\n/g, '<br>')}</p>
                         </div>
                     </div>
                 `;

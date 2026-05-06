@@ -3,7 +3,7 @@ from django.db import models
 
 
 class CustomUser(AbstractUser):
-    credits = models.IntegerField(default=0, verbose_name="Кредиты")
+    credits = models.IntegerField(default=10, verbose_name="Кредиты")
     expertise = models.TextField(blank=True, verbose_name="Экспертиза")
 
     class Meta:

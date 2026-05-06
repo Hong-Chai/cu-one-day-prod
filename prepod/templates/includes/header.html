@@ -14,7 +14,7 @@
                         {% if request.resolver_match.view_name == 'homepage:home' %}
                             <span class="nav-link active">Главная</span>
                         {% else %}
-                            <a class="nav-link" href="{% url 'homepage:home' %}">Главная</a>
+                            <a class="nav-link disabled" href="{% url 'homepage:home' %}">Лэндинг (в разработке)</a>
                         {% endif %}
                     </li>
                     {% if user.is_authenticated %}

@@ -21,6 +21,7 @@ def lecture_app(request):
         'current_topic': session.current_topic,
         'current_lecture_text': session.current_lecture_text,
         'current_feedback': session.current_feedback,
+        'credits': request.user.credits,
     }
     
     return render(request, 'lecture/app.html', context)
@@ -71,6 +72,12 @@ def submit_lecture(request):
         if not topic or not lecture_text:
             return JsonResponse({'error': 'Тема и текст лекции обязательны'}, status=400)
         
+        if request.user.credits <= 0:
+            return JsonResponse({'error': 'Недостаточно кредитов'}, status=403)
+        
+        request.user.credits -= 1
+        request.user.save()
+        
         result = check_lecture(topic, lecture_text, request.user.expertise)
         print(f"AI result: {result}")
         
@@ -95,7 +102,8 @@ def submit_lecture(request):
             return JsonResponse({
                 'status': 'ok',
                 'feedback': result['feedback'],
-                'new_topic': new_topic
+                'new_topic': new_topic,
+                'credits': request.user.credits
             })
         else:
             session.current_topic = topic
@@ -105,7 +113,8 @@ def submit_lecture(request):
             
             return JsonResponse({
                 'status': 'not ok',
-                'feedback': result['feedback']
+                'feedback': result['feedback'],
+                'credits': request.user.credits
             })
     except Exception as e:
         print(f"Error in submit_lecture: {e}")  # Логирование
