@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     # custom apps
     "users",
     "homepage",
+    "lecture",
 ]
 if DEBUG:
     INSTALLED_APPS.append("debug_toolbar")
@@ -136,3 +137,6 @@ LOGOUT_REDIRECT_URL = reverse_lazy("users:login")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.CustomUser"
+
+# Mistral AI
+MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY", "")

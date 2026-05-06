@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-1">
+    <h1 class="mb-4">Проверка компетенций преподавателя</h1>
+
+    <!-- Шаг 1: Экспертиза -->
+    <div id="expertise-section" {% if has_expertise %}style="display:none;"{% endif %}>
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Расскажите о своей экспертизе</h3>
+                <p class="text-muted">Опишите вашу сферу деятельности, опыт, стек технологий и т.д.</p>
+                <textarea id="expertise-input" class="form-control mb-3" rows="6" placeholder="Например: Я веб-разработчик с 5-летним опытом работы с Python, Django, PostgreSQL...">{{ expertise }}</textarea>
+                <button id="submit-expertise" class="btn btn-primary">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Шаг 2: Лекция -->
+    <div id="lecture-section" {% if not has_expertise %}style="display:none;"{% endif %}>
+        <!-- Информация о специализации -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title mb-2">Ваша специализация</h5>
+                        <p id="expertise-display" class="mb-0 text-muted">{{ expertise }}</p>
+                    </div>
+                    <button id="change-expertise-btn" class="btn btn-sm btn-outline-secondary">Изменить</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Текущая тема</h3>
+                <div id="current-topic" class="alert alert-info">
+                    <strong id="topic-text">Загрузка темы...</strong>
+                </div>
+                
+                <h4 class="mt-4">Ваша лекция</h4>
+                <textarea id="lecture-input" class="form-control mb-3" rows="10" placeholder="Напишите текст лекции по данной теме...">{{ current_lecture_text }}</textarea>
+                
+                <button id="submit-lecture" class="btn btn-success">Отправить лекцию</button>
+                
+                {% if current_feedback %}
+                <div id="feedback-section" class="mt-4">
+                    <h4>Фидбэк от ИИ</h4>
+                    <div id="feedback-content" class="alert alert-warning">{{ current_feedback }}</div>
+                </div>
+                {% else %}
+                <div id="feedback-section" class="mt-4" style="display:none;">
+                    <h4>Фидбэк от ИИ</h4>
+                    <div id="feedback-content" class="alert"></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Завершенные темы -->
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Завершенные темы <span class="badge bg-primary" id="completed-count">{{ completed_count }}</span></h3>
+                <div id="completed-topics-list">
+                    {% if completed_topics %}
+                        <div class="accordion" id="completedTopicsAccordion">
+                        {% for topic in completed_topics %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}">
+                                        <strong>{{ topic.topic }}</strong>
+                                        <small class="text-muted ms-2">{{ topic.completed_at|date:"d.m.Y H:i" }}</small>
+                                    </button>
+                                </h2>
+                                <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#completedTopicsAccordion">
+                                    <div class="accordion-body">
+                                        <h6>Текст лекции:</h6>
+                                        <p class="text-muted">{{ topic.lecture_text }}</p>
+                                        <h6 class="mt-3">Фидбэк:</h6>
+                                        <p class="text-success">{{ topic.feedback }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Пока нет завершенных тем</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const expertiseSection = document.getElementById('expertise-section');
+    const lectureSection = document.getElementById('lecture-section');
+    const submitExpertiseBtn = document.getElementById('submit-expertise');
+    const submitLectureBtn = document.getElementById('submit-lecture');
+    const changeExpertiseBtn = document.getElementById('change-expertise-btn');
+    const expertiseInput = document.getElementById('expertise-input');
+    const expertiseDisplay = document.getElementById('expertise-display');
+    const lectureInput = document.getElementById('lecture-input');
+    const topicText = document.getElementById('topic-text');
+    const feedbackSection = document.getElementById('feedback-section');
+    const feedbackContent = document.getElementById('feedback-content');
+    const completedTopicsList = document.getElementById('completed-topics-list');
+    const completedCount = document.getElementById('completed-count');
+
+    let currentTopic = '';
+
+    // Изменение специализации
+    if (changeExpertiseBtn) {
+        changeExpertiseBtn.addEventListener('click', function() {
+            lectureSection.style.display = 'none';
+            expertiseSection.style.display = 'block';
+        });
+    }
+
+    // Отправка экспертизы
+    submitExpertiseBtn.addEventListener('click', async function() {
+        const expertise = expertiseInput.value.trim();
+        if (!expertise) {
+            alert('Пожалуйста, заполните поле экспертизы');
+            return;
+        }
+
+        submitExpertiseBtn.disabled = true;
+        submitExpertiseBtn.textContent = 'Обработка...';
+
+        try {
+            const response = await fetch('{% url "lecture:save_expertise" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ expertise })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                currentTopic = data.topic;
+                topicText.textContent = currentTopic;
+                if (expertiseDisplay) {
+                    expertiseDisplay.textContent = expertise;
+                }
+                expertiseSection.style.display = 'none';
+                lectureSection.style.display = 'block';
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        } catch (error) {
+            alert('Ошибка соединения: ' + error.message);
+        } finally {
+            submitExpertiseBtn.disabled = false;
+            submitExpertiseBtn.textContent = 'Отправить';
+        }
+    });
+
+    // Отправка лекции
+    submitLectureBtn.addEventListener('click', async function() {
+        const lectureText = lectureInput.value.trim();
+        if (!lectureText) {
+            alert('Пожалуйста, напишите текст лекции');
+            return;
+        }
+
+        submitLectureBtn.disabled = true;
+        submitLectureBtn.textContent = 'Проверка...';
+
+        try {
+            const response = await fetch('{% url "lecture:submit_lecture" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ 
+                    topic: currentTopic,
+                    lecture_text: lectureText 
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.error) {
+                alert('Ошибка: ' + data.error);
+                return;
+            }
+            
+            feedbackContent.textContent = data.feedback;
+            
+            if (data.status === 'ok') {
+                feedbackContent.className = 'alert alert-success';
+                feedbackSection.style.display = 'block';
+                
+                const currentCount = parseInt(completedCount.textContent);
+                completedCount.textContent = currentCount + 1;
+                
+                let accordion = completedTopicsList.querySelector('.accordion');
+                if (!accordion) {
+                    completedTopicsList.innerHTML = '<div class="accordion" id="completedTopicsAccordion"></div>';
+                    accordion = completedTopicsList.querySelector('.accordion');
+                }
+                
+                const newIndex = accordion.children.length + 1;
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item';
+                accordionItem.innerHTML = `
+                    <h2 class="accordion-header" id="heading${newIndex}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${newIndex}">
+                            <strong>${currentTopic}</strong>
+                            <small class="text-muted ms-2">Только что</small>
+                        </button>
+                    </h2>
+                    <div id="collapse${newIndex}" class="accordion-collapse collapse" data-bs-parent="#completedTopicsAccordion">
+                        <div class="accordion-body">
+                            <h6>Текст лекции:</h6>
+                            <p class="text-muted">${lectureText}</p>
+                            <h6 class="mt-3">Фидбэк:</h6>
+                            <p class="text-success">${data.feedback}</p>
+                        </div>
+                    </div>
+                `;
+                accordion.insertBefore(accordionItem, accordion.firstChild);
+                
+                currentTopic = data.new_topic;
+                topicText.textContent = currentTopic;
+                lectureInput.value = '';
+                
+                setTimeout(() => {
+                    feedbackSection.style.display = 'none';
+                }, 5000);
+            } else {
+                feedbackContent.className = 'alert alert-warning';
+                feedbackSection.style.display = 'block';
+            }
+        } catch (error) {
+            alert('Ошибка соединения: ' + error.message);
+        } finally {
+            submitLectureBtn.disabled = false;
+            submitLectureBtn.textContent = 'Отправить лекцию';
+        }
+    });
+
+    // Если экспертиза уже есть, загружаем тему
+    {% if has_expertise %}
+    {% if current_topic %}
+    currentTopic = '{{ current_topic|escapejs }}';
+    topicText.textContent = currentTopic;
+    {% else %}
+    (async function() {
+        try {
+            const response = await fetch('{% url "lecture:save_expertise" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ expertise: '{{ expertise|escapejs }}' })
+            });
+            const data = await response.json();
+            if (data.success) {
+                currentTopic = data.topic;
+                topicText.textContent = currentTopic;
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки темы:', error);
+        }
+    })();
+    {% endif %}
+    {% endif %}
+});
+</script>
+{% endblock %}

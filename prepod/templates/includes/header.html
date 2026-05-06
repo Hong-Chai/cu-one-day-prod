@@ -18,13 +18,13 @@
                         {% endif %}
                     </li>
                     {% if user.is_authenticated %}
-                    {% comment %} <li class="nav-item">
-                        {% if request.resolver_match.view_name == 'users:profile' %}
-                            <span class="nav-link active">Профиль</span>
+                    <li class="nav-item">
+                        {% if request.resolver_match.view_name == 'lecture:app' %}
+                            <span class="nav-link active">Личный кабинет</span>
                         {% else %}
-                            <a class="nav-link" href="{% url 'users:profile' %}">Профиль</a>
+                            <a class="nav-link" href="{% url 'lecture:app' %}">Личный кабинет</a>
                         {% endif %}
-                    </li> {% endcomment %}
+                    </li>
                     <li class="nav-item">
                         <form method="post" action="{% url 'users:logout' %}" style="display: inline;">
                             {% csrf_token %}
@@ -37,13 +37,6 @@
                             <span class="nav-link active">Вход</span>
                         {% else %}
                             <a class="nav-link" href="{% url 'users:login' %}">Вход</a>
-                        {% endif %}
-                    </li>
-                    <li class="nav-item">
-                        {% if request.resolver_match.view_name == 'users:signup' %}
-                            <span class="nav-link active">Регистрация</span>
-                        {% else %}
-                            <a class="nav-link" href="{% url 'users:signup' %}">Регистрация</a>
                         {% endif %}
                     </li>
                     {% endif %}
