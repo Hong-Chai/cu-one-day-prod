@@ -238,6 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             feedbackContent.innerHTML = data.feedback.replace(/\n/g, '<br>');
+            feedbackSection.style.display = 'block';
             
             if (data.status === 'ok') {
                 feedbackContent.className = 'alert alert-success';
